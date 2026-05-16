@@ -79,7 +79,7 @@ export function TaskModal({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{editTask ? 'Edit Task' : 'New Task'}</DialogTitle>
         </DialogHeader>
@@ -93,6 +93,7 @@ export function TaskModal({
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               autoFocus
+              className="h-11 text-base md:text-sm md:h-9"
             />
           </div>
 
@@ -103,18 +104,19 @@ export function TaskModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="[color-scheme:dark]"
+                className="[color-scheme:dark] h-11 text-base md:text-sm md:h-9"
               />
             </div>
             <div>
               <label className="text-xs text-[#888898] mb-1.5 block">
-                Estimated (min)
+                Est. (min)
               </label>
               <Input
                 type="number"
                 min={1}
                 value={estimatedMinutes}
                 onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
+                className="h-11 text-base md:text-sm md:h-9"
               />
             </div>
           </div>
@@ -122,11 +124,8 @@ export function TaskModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-[#888898] mb-1.5 block">Category</label>
-              <Select
-                value={category}
-                onValueChange={(v) => setCategory(v as Category)}
-              >
-                <SelectTrigger>
+              <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
+                <SelectTrigger className="h-11 text-base md:text-sm md:h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,11 +138,8 @@ export function TaskModal({
             </div>
             <div>
               <label className="text-xs text-[#888898] mb-1.5 block">Priority</label>
-              <Select
-                value={priority}
-                onValueChange={(v) => setPriority(v as Priority)}
-              >
-                <SelectTrigger>
+              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
+                <SelectTrigger className="h-11 text-base md:text-sm md:h-9">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -165,19 +161,19 @@ export function TaskModal({
             />
           </div>
 
-          <div className="flex justify-between pt-1">
+          <div className="flex justify-between pt-1 pb-1">
             {onDelete ? (
-              <Button variant="destructive" size="sm" onClick={onDelete}>
+              <Button variant="destructive" size="sm" onClick={onDelete} className="h-11 px-4 md:h-9">
                 Delete
               </Button>
             ) : (
               <div />
             )}
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={onClose}>
+              <Button variant="outline" size="sm" onClick={onClose} className="h-11 px-4 md:h-9">
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={!title.trim()}>
+              <Button size="sm" onClick={handleSave} disabled={!title.trim()} className="h-11 px-4 md:h-9">
                 {editTask ? 'Save' : 'Add Task'}
               </Button>
             </div>

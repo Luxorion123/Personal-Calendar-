@@ -32,14 +32,27 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed left-[50%] top-[50%] z-50 w-full max-w-lg translate-x-[-50%] translate-y-[-50%] bg-[#141418] border border-[#1e1e2a] rounded-xl shadow-2xl p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
+        // Mobile: slide up from bottom, full width
+        'fixed z-50 bg-[#141418] border border-[#1e1e2a] shadow-2xl p-5 duration-200',
+        'bottom-0 left-0 right-0 rounded-t-2xl w-full',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out',
+        'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+        'data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
+        // Desktop: centered modal
+        'md:bottom-auto md:left-[50%] md:top-[50%] md:w-full md:max-w-lg',
+        'md:translate-x-[-50%] md:translate-y-[-50%] md:rounded-xl',
+        'md:data-[state=closed]:zoom-out-95 md:data-[state=open]:zoom-in-95',
+        'md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%]',
+        'md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%]',
         className
       )}
       {...props}
     >
+      {/* Mobile drag handle */}
+      <div className="md:hidden w-10 h-1 bg-[#2a2a38] rounded-full mx-auto mb-4" />
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100 text-[#888898] hover:text-[#e8e8f0] transition-opacity">
-        <X className="h-4 w-4" />
+        <X className="h-5 w-5" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>

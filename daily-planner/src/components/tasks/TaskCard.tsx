@@ -21,7 +21,7 @@ export function TaskCard({ task, onToggle, onClick, compact }: TaskCardProps) {
   return (
     <div
       className={cn(
-        'flex items-start gap-3 p-3 rounded-lg bg-[#141418] border border-[#1e1e2a] border-l-4 cursor-pointer hover:bg-[#1a1a20] transition-colors group',
+        'flex items-start gap-3 p-3.5 md:p-3 rounded-xl md:rounded-lg bg-[#141418] border border-[#1e1e2a] border-l-4 cursor-pointer hover:bg-[#1a1a20] active:bg-[#1a1a20] transition-colors group',
         PRIORITY_BORDER[task.priority],
         task.completed && 'opacity-50'
       )}
@@ -30,10 +30,10 @@ export function TaskCard({ task, onToggle, onClick, compact }: TaskCardProps) {
       {onToggle && (
         <button
           className={cn(
-            'mt-0.5 flex-shrink-0 w-4 h-4 rounded border transition-colors',
+            'mt-0.5 flex-shrink-0 w-5 h-5 md:w-4 md:h-4 rounded border transition-colors',
             task.completed
               ? 'bg-[#4f8ef7] border-[#4f8ef7]'
-              : 'border-[#1e1e2a] hover:border-[#4f8ef7]'
+              : 'border-[#2a2a38] hover:border-[#4f8ef7]'
           )}
           onClick={(e) => {
             e.stopPropagation()
@@ -54,7 +54,7 @@ export function TaskCard({ task, onToggle, onClick, compact }: TaskCardProps) {
           {task.title}
         </p>
         {!compact && (
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1.5">
             <span
               className="w-2 h-2 rounded-full flex-shrink-0"
               style={{ backgroundColor: CATEGORY_COLORS[task.category as Category] }}

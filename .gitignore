@@ -1,0 +1,6 @@
+# Only track the daily-planner project
+*
+!daily-planner/
+!daily-planner/**
+!.gitignore
+!vercel.json

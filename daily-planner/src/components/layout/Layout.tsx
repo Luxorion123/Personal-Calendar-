@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from './Sidebar'
+import { BottomNav } from './BottomNav'
 import { TaskModal } from '@/components/tasks/TaskModal'
 import { SearchModal } from './SearchModal'
 import { useKeyboard } from '@/hooks/useKeyboard'
@@ -29,11 +30,16 @@ export function Layout() {
 
   return (
     <div className="flex h-screen bg-[#0a0a0f] overflow-hidden">
-      <Sidebar
-        onNewTask={() => setTaskModalOpen(true)}
-        onSearch={() => setSearchOpen(true)}
-      />
-      <main className="flex-1 ml-14 overflow-y-auto">
+      {/* Desktop sidebar — hidden on mobile */}
+      <div className="hidden md:block">
+        <Sidebar
+          onNewTask={() => setTaskModalOpen(true)}
+          onSearch={() => setSearchOpen(true)}
+        />
+      </div>
+
+      {/* Main content */}
+      <main className="flex-1 md:ml-14 overflow-y-auto pb-20 md:pb-0">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -47,6 +53,9 @@ export function Layout() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Mobile bottom nav — hidden on desktop */}
+      <BottomNav onNewTask={() => setTaskModalOpen(true)} />
 
       <TaskModal
         open={taskModalOpen}

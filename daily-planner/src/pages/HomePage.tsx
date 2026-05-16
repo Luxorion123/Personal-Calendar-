@@ -52,7 +52,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-5 md:space-y-6">
       {/* AI Placeholder */}
       <div className="rounded-xl border border-[#1e1e2a] bg-[#141418] p-4">
         <div className="flex items-center gap-3 mb-3">
@@ -64,8 +64,8 @@ export default function HomePage() {
             Coming soon
           </span>
         </div>
-        <div className="h-9 rounded-md border border-[#1e1e2a] bg-[#0a0a0f] flex items-center px-3 opacity-40 cursor-not-allowed">
-          <span className="text-xs text-[#55556a]">Ask me anything about your day...</span>
+        <div className="h-10 rounded-lg border border-[#1e1e2a] bg-[#0a0a0f] flex items-center px-3 opacity-40 cursor-not-allowed">
+          <span className="text-sm text-[#55556a]">Ask me anything about your day...</span>
         </div>
       </div>
 
@@ -76,10 +76,12 @@ export default function HomePage() {
             <h2 className="text-base font-semibold text-[#e8e8f0]">Today</h2>
             <p className="text-xs text-[#55556a]">{formatDisplayDate(today)}</p>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-[#888898]">Productivity</p>
-            <p className="text-sm font-semibold text-[#4f8ef7]">{productivityScore}%</p>
-          </div>
+          {productivityScore > 0 && (
+            <div className="text-right">
+              <p className="text-xs text-[#888898]">Productivity</p>
+              <p className="text-sm font-semibold text-[#4f8ef7]">{productivityScore}%</p>
+            </div>
+          )}
         </div>
 
         {productivityScore > 0 && (
@@ -87,11 +89,12 @@ export default function HomePage() {
         )}
 
         {todayTasks.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-[#1e1e2a] p-6 text-center">
-            <p className="text-sm text-[#55556a]">No tasks today. Press N to add one.</p>
+          <div className="rounded-xl border border-dashed border-[#1e1e2a] p-8 text-center">
+            <p className="text-sm text-[#55556a]">No tasks today.</p>
+            <p className="text-xs text-[#55556a] mt-1">Tap + to add one.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {todayTasks.map((task) => (
               <TaskCard
                 key={task.id}
@@ -108,22 +111,22 @@ export default function HomePage() {
       {upcomingByDay.length > 0 && (
         <section>
           <h2 className="text-base font-semibold text-[#e8e8f0] mb-3">Coming up</h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {upcomingByDay.map(({ date, tasks: dayTasks }) => (
               <div key={date}>
                 <button
-                  className="flex items-center gap-2 mb-2 hover:text-[#e8e8f0] transition-colors group"
+                  className="flex items-center gap-2 mb-2 group"
                   onClick={() => {
                     setSelectedDate(date)
                     navigate('/daily')
                   }}
                 >
-                  <span className="text-xs font-medium text-[#888898] group-hover:text-[#e8e8f0]">
+                  <span className="text-xs font-medium text-[#888898] group-hover:text-[#e8e8f0] transition-colors">
                     {isToday(fromDateString(date)) ? 'Today' : formatShortDate(date)}
                   </span>
                   <ChevronRight className="w-3 h-3 text-[#55556a] group-hover:text-[#888898]" />
                 </button>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {dayTasks.slice(0, 3).map((task) => (
                     <TaskCard
                       key={task.id}
@@ -149,12 +152,10 @@ export default function HomePage() {
 
       {/* Category chart */}
       <section>
-        <h2 className="text-base font-semibold text-[#e8e8f0] mb-1">
-          Past 30 days
-        </h2>
+        <h2 className="text-base font-semibold text-[#e8e8f0] mb-1">Past 30 days</h2>
         <p className="text-xs text-[#55556a] mb-3">Time by category</p>
         <div className="rounded-xl border border-[#1e1e2a] bg-[#141418] p-4">
-          <CategoryDonut data={categoryMins} />
+          <CategoryDonut data={categoryMins} height={180} />
         </div>
       </section>
 
