@@ -1,5 +1,6 @@
 {
   "buildCommand": "cd daily-planner && npm install && npm run build",
   "outputDirectory": "daily-planner/dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "toolbar": false
 }
