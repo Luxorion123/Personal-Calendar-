@@ -67,25 +67,28 @@ const useStore = create<Store>()(
       },
 
       updateRecurringTask: (id, updates) => {
+        const today = todayString()
         set((s) => ({
           recurringTasks: s.recurringTasks.map((t) =>
             t.id === id ? { ...t, ...updates } : t
           ),
-        }))
-        // Remove old generated tasks and re-generate
-        set((s) => ({
+          // Only remove future incomplete instances — past and completed ones are kept
           tasks: s.tasks.filter(
-            (t) => !(t.isRecurring && t.recurringId === id)
+            (t) =>
+              !(t.isRecurring && t.recurringId === id && t.date >= today && !t.completed)
           ),
         }))
         get().generateRecurringTasks(4)
       },
 
       deleteRecurringTask: (id) => {
+        const today = todayString()
         set((s) => ({
           recurringTasks: s.recurringTasks.filter((t) => t.id !== id),
+          // Only remove future incomplete instances — past and completed ones are kept
           tasks: s.tasks.filter(
-            (t) => !(t.isRecurring && t.recurringId === id)
+            (t) =>
+              !(t.isRecurring && t.recurringId === id && t.date >= today && !t.completed)
           ),
         }))
       },
