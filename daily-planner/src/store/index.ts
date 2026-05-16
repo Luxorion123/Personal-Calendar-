@@ -4,6 +4,15 @@ import type { Task, RecurringTask, DayReflection, AppState } from '../types'
 import { generateId } from '../lib/utils'
 import { todayString, toDateString, getWeekDays } from '../lib/dateUtils'
 import { addDays } from '../lib/dateUtils'
+import {
+  upsertTask,
+  dbDeleteTask,
+  upsertManyTasks,
+  upsertRecurringTask,
+  dbDeleteRecurringTask,
+  upsertReflection,
+  fetchAllData,
+} from '../lib/db'
 
 interface Actions {
   addTask: (task: Omit<Task, 'id'>) => Task
@@ -17,15 +26,16 @@ interface Actions {
   generateRecurringTasks: (weeksAhead?: number) => void
 
   updateReflection: (date: string, updates: Partial<DayReflection>) => void
-  updateTaskReflection: (
-    date: string,
-    taskId: string,
-    actualMinutes: number,
-    note: string
-  ) => void
+  updateTaskReflection: (date: string, taskId: string, actualMinutes: number, note: string) => void
 
   setSelectedDate: (date: string) => void
   setGoogleAccessToken: (token: string | null) => void
+
+  // Cloud sync
+  userId: string | null
+  setUserId: (id: string | null) => void
+  loadFromCloud: (userId: string) => Promise<void>
+  migrateLocalToCloud: (userId: string) => Promise<void>
 }
 
 type Store = AppState & Actions
@@ -38,31 +48,54 @@ const useStore = create<Store>()(
       reflections: {},
       googleAccessToken: null,
       selectedDate: todayString(),
+      userId: null,
+
+      // ── tasks ────────────────────────────────────────────────────────────
 
       addTask: (taskData) => {
         const task: Task = { ...taskData, id: generateId() }
         set((s) => ({ tasks: [...s.tasks, task] }))
+        const { userId } = get()
+        if (userId) upsertTask(task, userId).catch(console.error)
         return task
       },
 
-      updateTask: (id, updates) =>
+      updateTask: (id, updates) => {
         set((s) => ({
           tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-        })),
+        }))
+        const { userId, tasks } = get()
+        if (userId) {
+          const task = tasks.find((t) => t.id === id)
+          if (task) upsertTask({ ...task, ...updates }, userId).catch(console.error)
+        }
+      },
 
-      deleteTask: (id) =>
-        set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+      deleteTask: (id) => {
+        set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }))
+        dbDeleteTask(id).catch(console.error)
+      },
 
-      toggleTask: (id) =>
+      toggleTask: (id) => {
         set((s) => ({
           tasks: s.tasks.map((t) =>
             t.id === id ? { ...t, completed: !t.completed } : t
           ),
-        })),
+        }))
+        const { userId, tasks } = get()
+        if (userId) {
+          const task = tasks.find((t) => t.id === id)
+          if (task) upsertTask(task, userId).catch(console.error)
+        }
+      },
+
+      // ── recurring tasks ──────────────────────────────────────────────────
 
       addRecurringTask: (taskData) => {
-        const task: RecurringTask = { ...taskData, id: generateId() }
-        set((s) => ({ recurringTasks: [...s.recurringTasks, task] }))
+        const rt: RecurringTask = { ...taskData, id: generateId() }
+        set((s) => ({ recurringTasks: [...s.recurringTasks, rt] }))
+        const { userId } = get()
+        if (userId) upsertRecurringTask(rt, userId).catch(console.error)
         get().generateRecurringTasks(4)
       },
 
@@ -72,12 +105,16 @@ const useStore = create<Store>()(
           recurringTasks: s.recurringTasks.map((t) =>
             t.id === id ? { ...t, ...updates } : t
           ),
-          // Only remove future incomplete instances — past and completed ones are kept
           tasks: s.tasks.filter(
             (t) =>
               !(t.isRecurring && t.recurringId === id && t.date >= today && !t.completed)
           ),
         }))
+        const { userId, recurringTasks } = get()
+        if (userId) {
+          const rt = recurringTasks.find((t) => t.id === id)
+          if (rt) upsertRecurringTask(rt, userId).catch(console.error)
+        }
         get().generateRecurringTasks(4)
       },
 
@@ -85,16 +122,16 @@ const useStore = create<Store>()(
         const today = todayString()
         set((s) => ({
           recurringTasks: s.recurringTasks.filter((t) => t.id !== id),
-          // Only remove future incomplete instances — past and completed ones are kept
           tasks: s.tasks.filter(
             (t) =>
               !(t.isRecurring && t.recurringId === id && t.date >= today && !t.completed)
           ),
         }))
+        dbDeleteRecurringTask(id).catch(console.error)
       },
 
       generateRecurringTasks: (weeksAhead = 4) => {
-        const { recurringTasks, tasks } = get()
+        const { recurringTasks, tasks, userId } = get()
         const today = new Date()
         const newTasks: Task[] = []
 
@@ -107,10 +144,10 @@ const useStore = create<Store>()(
               const dow = day.getDay()
               if (!rt.daysOfWeek.includes(dow)) return
               const dateStr = toDateString(day)
-              const alreadyExists = tasks.some(
+              const exists = tasks.some(
                 (t) => t.isRecurring && t.recurringId === rt.id && t.date === dateStr
               )
-              if (!alreadyExists) {
+              if (!exists) {
                 newTasks.push({
                   id: generateId(),
                   title: rt.title,
@@ -130,26 +167,13 @@ const useStore = create<Store>()(
 
         if (newTasks.length > 0) {
           set((s) => ({ tasks: [...s.tasks, ...newTasks] }))
+          if (userId) upsertManyTasks(newTasks, userId).catch(console.error)
         }
       },
 
-      updateReflection: (date, updates) =>
-        set((s) => {
-          const existing = s.reflections[date] || {
-            date,
-            taskReflections: [],
-            mood: 0,
-            overview: '',
-          }
-          return {
-            reflections: {
-              ...s.reflections,
-              [date]: { ...existing, ...updates },
-            },
-          }
-        }),
+      // ── reflections ──────────────────────────────────────────────────────
 
-      updateTaskReflection: (date, taskId, actualMinutes, note) =>
+      updateReflection: (date, updates) => {
         set((s) => {
           const existing = s.reflections[date] || {
             date,
@@ -157,25 +181,67 @@ const useStore = create<Store>()(
             mood: 0,
             overview: '',
           }
-          const taskRefs = existing.taskReflections.filter(
-            (r) => r.taskId !== taskId
-          )
-          return {
-            reflections: {
-              ...s.reflections,
-              [date]: {
-                ...existing,
-                taskReflections: [...taskRefs, { taskId, actualMinutes, note }],
-              },
-            },
+          const updated = { ...existing, ...updates }
+          const { userId } = get()
+          if (userId) upsertReflection(updated, userId).catch(console.error)
+          return { reflections: { ...s.reflections, [date]: updated } }
+        })
+      },
+
+      updateTaskReflection: (date, taskId, actualMinutes, note) => {
+        set((s) => {
+          const existing = s.reflections[date] || {
+            date,
+            taskReflections: [],
+            mood: 0,
+            overview: '',
           }
-        }),
+          const taskRefs = existing.taskReflections.filter((r) => r.taskId !== taskId)
+          const updated = {
+            ...existing,
+            taskReflections: [...taskRefs, { taskId, actualMinutes, note }],
+          }
+          const { userId } = get()
+          if (userId) upsertReflection(updated, userId).catch(console.error)
+          return { reflections: { ...s.reflections, [date]: updated } }
+        })
+      },
+
+      // ── cloud sync ───────────────────────────────────────────────────────
+
+      setUserId: (id) => set({ userId: id }),
+
+      loadFromCloud: async (userId) => {
+        const { tasks, recurringTasks, reflections } = await fetchAllData(userId)
+        set({ tasks, recurringTasks, reflections, userId })
+        get().generateRecurringTasks(4)
+      },
+
+      // Upload existing localStorage data to Supabase on first login
+      migrateLocalToCloud: async (userId) => {
+        const { tasks, recurringTasks, reflections } = get()
+        await Promise.all([
+          upsertManyTasks(tasks, userId),
+          ...recurringTasks.map((rt) => upsertRecurringTask(rt, userId)),
+          ...Object.values(reflections).map((r) => upsertReflection(r, userId)),
+        ]).catch(console.error)
+      },
+
+      // ── misc ─────────────────────────────────────────────────────────────
 
       setSelectedDate: (date) => set({ selectedDate: date }),
       setGoogleAccessToken: (token) => set({ googleAccessToken: token }),
     }),
     {
       name: 'daily-planner-store',
+      // Don't persist userId — auth state comes from Supabase session
+      partialize: (s) => ({
+        tasks: s.tasks,
+        recurringTasks: s.recurringTasks,
+        reflections: s.reflections,
+        selectedDate: s.selectedDate,
+        googleAccessToken: s.googleAccessToken,
+      }),
     }
   )
 )

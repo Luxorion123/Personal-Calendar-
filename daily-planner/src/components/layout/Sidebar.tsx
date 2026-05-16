@@ -10,6 +10,7 @@ import {
   LogOut,
   RefreshCw,
   Search,
+  User,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar'
@@ -20,6 +21,7 @@ import {
 } from '@/components/ui/tooltip'
 import { todayString } from '@/lib/dateUtils'
 import useStore from '@/store'
+import { supabase } from '@/lib/supabase'
 
 interface SidebarProps {
   onNewTask: () => void
@@ -100,11 +102,20 @@ export function Sidebar({ onNewTask, onSearch }: SidebarProps) {
             onClick={syncFromCalendar}
             loading={isLoading}
           />
-          <SidebarButton icon={LogOut} label="Sign out of Google" onClick={signOut} />
+          <SidebarButton icon={LogOut} label="Disconnect Google Calendar" onClick={signOut} />
         </>
       ) : (
         <SidebarButton icon={LogIn} label="Connect Google Calendar" onClick={signIn} />
       )}
+
+      <div className="w-6 h-px bg-[#1e1e2a] my-1" />
+
+      {/* Account sign out */}
+      <SidebarButton
+        icon={User}
+        label="Sign out of account"
+        onClick={() => supabase.auth.signOut()}
+      />
     </aside>
   )
 }
